@@ -1,323 +1,319 @@
-import { useState, useEffect } from "react";
-import { Link, useLocation } from "wouter";
+import { useState } from "react";
+import { useLocation } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
-import { Rocket, Cpu, Code, ChevronRight, Globe, Zap, ArrowRight, Lock, Info } from "lucide-react";
+import { Rocket, Lock, Info, ChevronRight, Star, Zap, Map, LayoutGrid } from "lucide-react";
 import spaceBg from "@assets/generated_images/space_galaxy_background_with_tech_ui.png";
 import sunIcon from "@assets/generated_images/stylized_sun_icon.png";
 import mercuryIcon from "@assets/generated_images/stylized_mercury_icon.png";
 import venusIcon from "@assets/generated_images/stylized_venus_icon.png";
 import earthIcon from "@assets/generated_images/stylized_earth_tech_icon.png";
-import marsIcon from "@assets/generated_images/mars_base_world_icon.png"; // Keeping the previous mars one or using new if generated? Let's assume we use the new style if it matches, but I'll use the one I have or the new one. Wait, I didn't generate Mars in this batch because I had one. I'll use the previous Mars one for now.
+import marsIcon from "@assets/generated_images/mars_base_world_icon.png";
 import jupiterIcon from "@assets/generated_images/stylized_jupiter_icon.png";
 import saturnIcon from "@assets/generated_images/stylized_saturn_icon.png";
 import uranusIcon from "@assets/generated_images/stylized_uranus_icon.png";
 import neptuneIcon from "@assets/generated_images/stylized_neptune_icon.png";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
+import { Badge } from "@/components/ui/badge";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 // Planet Data
 const planets = [
   {
     id: "sun",
     name: "Sol",
+    subtitle: "Estrella Madre",
     type: "Star",
     icon: sunIcon,
-    size: 160,
-    orbit: 0,
-    speed: 0,
-    description: "La fuente de energía de todo el sistema.",
+    color: "text-yellow-400",
+    gradient: "from-yellow-400 to-orange-600",
+    description: "La fuente de energía de todo el sistema. Núcleo de fusión nuclear.",
     locked: true
   },
   {
     id: "mercury",
     name: "Mercurio",
+    subtitle: "Sector Hardware",
     type: "Hardware",
     icon: mercuryIcon,
-    size: 40,
-    orbit: 220,
-    speed: 25,
-    description: "Zona de Alta Temperatura. Próximamente.",
+    color: "text-slate-400",
+    gradient: "from-slate-400 to-slate-600",
+    description: "Zona de Alta Temperatura. Fundamentos de electrónica y resistencia térmica.",
     locked: true
   },
   {
     id: "venus",
     name: "Venus",
+    subtitle: "La Nube",
     type: "Cloud Computing",
     icon: venusIcon,
-    size: 55,
-    orbit: 300,
-    speed: 35,
-    description: "Atmósfera densa de datos. Próximamente.",
+    color: "text-orange-300",
+    gradient: "from-orange-300 to-yellow-600",
+    description: "Atmósfera densa de datos. Arquitectura de servidores y redes distribuidas.",
     locked: true
   },
   {
     id: "earth",
-    name: "Tierra (Ciudad Código)",
+    name: "Tierra",
+    subtitle: "Ciudad Código",
     type: "Software",
     icon: earthIcon,
-    size: 70,
-    orbit: 420,
-    speed: 45,
-    description: "El hogar de la programación. Aprende Python y Lógica.",
+    color: "text-blue-400",
+    gradient: "from-blue-400 to-emerald-500",
+    description: "El hogar de la programación. Aprende Python, Lógica y Algoritmos en un entorno seguro.",
     locked: false,
     worldId: 1,
-    difficulty: "Principiante"
+    difficulty: "Principiante",
+    stats: { levels: 5, xp: 2500 }
   },
   {
     id: "mars",
-    name: "Marte (Base Robótica)",
+    name: "Marte",
+    subtitle: "Base Robótica",
     type: "Robotics",
     icon: marsIcon,
-    size: 50,
-    orbit: 540,
-    speed: 55,
-    description: "Colonia de ingeniería. Domina los circuitos y rovers.",
+    color: "text-red-500",
+    gradient: "from-red-500 to-orange-700",
+    description: "Colonia de ingeniería avanzada. Domina circuitos, sensores y rovers autónomos.",
     locked: false,
     worldId: 2,
-    difficulty: "Intermedio"
+    difficulty: "Intermedio",
+    stats: { levels: 8, xp: 4000 }
   },
   {
     id: "jupiter",
     name: "Júpiter",
+    subtitle: "Gigante de Datos",
     type: "Big Data",
     icon: jupiterIcon,
-    size: 120,
-    orbit: 700,
-    speed: 80,
-    description: "El gigante de los datos masivos. Próximamente.",
+    color: "text-orange-400",
+    gradient: "from-orange-400 to-amber-700",
+    description: "Procesamiento masivo de información y bases de datos distribuidas.",
     locked: true
   },
   {
     id: "saturn",
     name: "Saturno",
+    subtitle: "Anillos de Red",
     type: "Networks",
     icon: saturnIcon,
-    size: 100,
-    orbit: 850,
-    speed: 100,
-    description: "Anillos de conectividad y redes. Próximamente.",
+    color: "text-yellow-200",
+    gradient: "from-yellow-200 to-amber-500",
+    description: "Protocolos de comunicación, ciberseguridad y topologías de red.",
     locked: true
   },
   {
     id: "uranus",
     name: "Urano",
+    subtitle: "Laboratorio Cryo",
     type: "Cryo-Tech",
     icon: uranusIcon,
-    size: 80,
-    orbit: 1000,
-    speed: 120,
-    description: "Tecnología de enfriamiento. Próximamente.",
+    color: "text-cyan-300",
+    gradient: "from-cyan-300 to-blue-500",
+    description: "Tecnología de enfriamiento y superconductores cuánticos.",
     locked: true
   },
   {
     id: "neptune",
     name: "Neptuno",
+    subtitle: "Abismo IA",
     type: "Deep AI",
     icon: neptuneIcon,
-    size: 80,
-    orbit: 1150,
-    speed: 140,
-    description: "Inteligencia Artificial Profunda. Próximamente.",
+    color: "text-indigo-400",
+    gradient: "from-indigo-400 to-purple-700",
+    description: "Redes neuronales profundas e inteligencia artificial avanzada.",
     locked: true
   }
 ];
 
 export default function GalaxyMap() {
   const [, setLocation] = useLocation();
-  const [selectedPlanet, setSelectedPlanet] = useState<typeof planets[0] | null>(null);
-  const [hoveredPlanet, setHoveredPlanet] = useState<string | null>(null);
+  const [selectedId, setSelectedId] = useState("earth");
 
-  const handlePlanetClick = (planet: typeof planets[0]) => {
-    setSelectedPlanet(planet);
-  };
+  const selectedPlanet = planets.find(p => p.id === selectedId) || planets[3];
 
   const handleEnterWorld = (worldId: number) => {
     setLocation(`/play?world=${worldId}`);
   };
 
   return (
-    <div className="min-h-screen bg-black font-sans overflow-hidden relative flex flex-col items-center justify-center">
-      {/* Background */}
-      <div className="absolute inset-0 z-0 bg-black">
-        <img src={spaceBg} className="w-full h-full object-cover opacity-40 scale-110 animate-pulse-slow" alt="Space" />
-        <div className="absolute inset-0 bg-gradient-radial from-transparent via-black/50 to-black" />
+    <div className="min-h-screen bg-black font-sans overflow-hidden relative flex">
+      {/* Background Layer */}
+      <div className="absolute inset-0 z-0">
+        <img src={spaceBg} className="w-full h-full object-cover opacity-30" alt="Galaxy" />
+        <div className="absolute inset-0 bg-gradient-to-r from-black via-black/80 to-transparent" />
       </div>
 
-      {/* Grid Overlay */}
-      <div className="absolute inset-0 z-0 opacity-10 pointer-events-none" 
-        style={{ 
-          backgroundImage: 'linear-gradient(rgba(0, 255, 255, 0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(0, 255, 255, 0.1) 1px, transparent 1px)',
-          backgroundSize: '100px 100px'
-        }} 
-      />
+      {/* Left Sidebar - Planet List */}
+      <div className="w-full md:w-1/3 lg:w-1/4 h-screen z-20 flex flex-col border-r border-white/10 bg-black/40 backdrop-blur-xl relative">
+        <div className="p-8 pb-4">
+          <div className="flex items-center gap-2 mb-2">
+            <div className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse" />
+            <span className="text-xs font-bold tracking-[0.2em] text-cyan-400 uppercase">Sistema Solar v2.0</span>
+          </div>
+          <h1 className="text-3xl font-black text-white tracking-tight">
+            ROBO<span className="text-cyan-400">QUEST</span>
+          </h1>
+          <p className="text-slate-400 text-sm mt-1">Selecciona tu destino de aprendizaje.</p>
+        </div>
 
-      {/* UI Overlay - Top Left */}
-      <div className="absolute top-8 left-8 z-50 pointer-events-none">
-        <h1 className="text-4xl md:text-5xl font-black text-white tracking-tight drop-shadow-[0_0_15px_rgba(0,255,255,0.5)]">
-          SISTEMA <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-purple-500">ROBOQUEST</span>
-        </h1>
-        <p className="text-slate-400 text-sm mt-2 max-w-xs">
-          Navega a través de los planetas para acceder a los módulos de aprendizaje.
-        </p>
-      </div>
-
-      {/* Solar System Container */}
-      {/* We use a large container that we can pan/zoom conceptually, but for now purely centered */}
-      <div className="relative w-[1500px] h-[1500px] flex items-center justify-center scale-[0.4] md:scale-[0.6] lg:scale-[0.8] transition-transform duration-1000 origin-center">
+        <ScrollArea className="flex-1 px-4">
+          <div className="space-y-2 pb-8">
+            {planets.map((planet) => (
+              <button
+                key={planet.id}
+                onClick={() => setSelectedId(planet.id)}
+                className={cn(
+                  "w-full flex items-center gap-4 p-3 rounded-xl transition-all duration-300 group border border-transparent text-left",
+                  selectedId === planet.id 
+                    ? "bg-white/10 border-white/10 shadow-lg" 
+                    : "hover:bg-white/5 hover:border-white/5 opacity-60 hover:opacity-100"
+                )}
+              >
+                <div className={cn(
+                  "w-12 h-12 rounded-full flex items-center justify-center bg-black/50 border border-white/10 relative overflow-hidden transition-transform duration-500",
+                  selectedId === planet.id && "scale-110 border-white/30"
+                )}>
+                  <img src={planet.icon} className="w-full h-full object-contain p-1" />
+                </div>
+                
+                <div className="flex-1">
+                  <div className="flex justify-between items-center">
+                    <span className={cn(
+                      "font-bold text-sm transition-colors",
+                      selectedId === planet.id ? "text-white" : "text-slate-300"
+                    )}>
+                      {planet.name}
+                    </span>
+                    {planet.locked && <Lock className="w-3 h-3 text-slate-600" />}
+                  </div>
+                  <span className="text-xs text-slate-500 block">{planet.type}</span>
+                </div>
+                
+                {selectedId === planet.id && (
+                  <motion.div layoutId="sidebar-active" className="w-1 h-8 rounded-full bg-cyan-400" />
+                )}
+              </button>
+            ))}
+          </div>
+        </ScrollArea>
         
-        {/* Orbits */}
-        {planets.map((planet) => (
-          planet.id !== 'sun' && (
-            <div 
-              key={`orbit-${planet.id}`}
-              className="absolute rounded-full border border-white/10"
-              style={{ 
-                width: planet.orbit, 
-                height: planet.orbit,
-                boxShadow: hoveredPlanet === planet.id ? '0 0 20px rgba(255,255,255,0.1)' : 'none'
-              }}
-            />
-          )
-        ))}
+        {/* User Stats Mini */}
+        <div className="p-4 border-t border-white/10 bg-black/20">
+           <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-cyan-500 to-blue-600 flex items-center justify-center font-bold text-white">
+                CR
+              </div>
+              <div>
+                <div className="text-sm font-bold text-white">Cadete Robo</div>
+                <div className="text-xs text-slate-400">Nivel 12 • 850 XP</div>
+              </div>
+           </div>
+        </div>
+      </div>
 
-        {/* Planets */}
-        {planets.map((planet) => (
-          <div
-            key={planet.id}
-            className="absolute flex items-center justify-center"
-            style={{
-              width: planet.orbit,
-              height: planet.orbit,
-              animation: planet.id === 'sun' ? 'none' : `spin ${planet.speed}s linear infinite`,
-            }}
+      {/* Right Content - Hero View */}
+      <div className="flex-1 h-screen relative z-10 flex flex-col md:flex-row items-center justify-center p-8 md:p-16 overflow-hidden">
+        
+        {/* Large Planet Visualization */}
+        <AnimatePresence mode="wait">
+          <motion.div 
+            key={selectedId}
+            initial={{ opacity: 0, scale: 0.8, x: 100 }}
+            animate={{ opacity: 1, scale: 1, x: 0 }}
+            exit={{ opacity: 0, scale: 0.9, x: -100 }}
+            transition={{ type: "spring", damping: 20, stiffness: 100 }}
+            className="relative w-full md:w-1/2 aspect-square max-w-[600px] flex items-center justify-center"
           >
-            {/* The planet itself needs to counter-rotate or just be placed at the top */}
-            {/* Actually, to animate properly in an orbit, we rotate the container. 
-                The planet element is positioned at the 'top' of the rotation circle (translateY of -radius).
-            */}
-            <motion.div
-              className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 cursor-pointer group"
-              style={{
-                width: planet.size,
-                height: planet.size,
-                animation: `counter-spin ${planet.speed}s linear infinite` // Keep planet upright if needed, or just let it rotate
-              }}
-              whileHover={{ scale: 1.2, zIndex: 50 }}
-              onHoverStart={() => setHoveredPlanet(planet.id)}
-              onHoverEnd={() => setHoveredPlanet(null)}
-              onClick={(e) => {
-                e.stopPropagation();
-                handlePlanetClick(planet);
-              }}
-            >
-              {/* Selection Ring */}
-              {selectedPlanet?.id === planet.id && (
-                <motion.div 
-                  layoutId="selection-ring"
-                  className="absolute -inset-4 border-2 border-cyan-400 rounded-full animate-pulse z-0"
-                  transition={{ type: "spring", stiffness: 300, damping: 30 }}
+             {/* Glow Effect behind planet */}
+             <div className={cn(
+               "absolute inset-0 blur-[100px] opacity-30 rounded-full bg-gradient-to-tr",
+               selectedPlanet.gradient
+             )} />
+             
+             {/* Floating Animation Wrapper */}
+             <motion.div
+               animate={{ y: [-15, 15, -15] }}
+               transition={{ repeat: Infinity, duration: 6, ease: "easeInOut" }}
+               className="relative z-10 w-full h-full"
+             >
+                <img 
+                  src={selectedPlanet.icon} 
+                  className="w-full h-full object-contain drop-shadow-[0_0_50px_rgba(0,0,0,0.5)]" 
+                  alt={selectedPlanet.name} 
                 />
+             </motion.div>
+             
+             {/* Orbit Rings Decoration */}
+             <div className="absolute inset-0 border border-white/5 rounded-full scale-150 opacity-20" />
+             <div className="absolute inset-0 border border-white/5 rounded-full scale-[1.8] opacity-10" />
+          </motion.div>
+        </AnimatePresence>
+
+        {/* Planet Details Panel */}
+        <div className="w-full md:w-1/2 max-w-lg mt-8 md:mt-0 md:pl-12 flex flex-col justify-center">
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={selectedId}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              transition={{ delay: 0.1 }}
+            >
+              <Badge variant="outline" className={cn("mb-4 border-white/20 px-3 py-1", selectedPlanet.color)}>
+                {selectedPlanet.type}
+              </Badge>
+              
+              <h2 className="text-6xl font-black text-white mb-2 tracking-tight">
+                {selectedPlanet.name}
+              </h2>
+              <div className="text-xl text-slate-400 font-light mb-6">
+                {selectedPlanet.subtitle}
+              </div>
+              
+              <p className="text-slate-300 text-lg leading-relaxed mb-8 border-l-2 border-white/10 pl-4">
+                {selectedPlanet.description}
+              </p>
+
+              {selectedPlanet.stats && (
+                <div className="grid grid-cols-2 gap-4 mb-8">
+                  <div className="bg-white/5 rounded-xl p-4 border border-white/5">
+                    <div className="text-slate-400 text-xs uppercase font-bold mb-1 flex items-center gap-2">
+                      <LayoutGrid className="w-3 h-3" /> Niveles
+                    </div>
+                    <div className="text-2xl font-mono font-bold text-white">{selectedPlanet.stats.levels}</div>
+                  </div>
+                  <div className="bg-white/5 rounded-xl p-4 border border-white/5">
+                     <div className="text-slate-400 text-xs uppercase font-bold mb-1 flex items-center gap-2">
+                      <Star className="w-3 h-3" /> Recompensa Total
+                    </div>
+                    <div className="text-2xl font-mono font-bold text-yellow-400">{selectedPlanet.stats.xp} XP</div>
+                  </div>
+                </div>
               )}
 
-              {/* Planet Image */}
-              <div className="relative w-full h-full z-10">
-                 <img src={planet.icon} alt={planet.name} className="w-full h-full object-contain drop-shadow-[0_0_30px_rgba(0,0,0,0.5)]" />
-                 
-                 {/* Locked Overlay */}
-                 {planet.locked && (
-                   <div className="absolute inset-0 bg-black/50 rounded-full flex items-center justify-center backdrop-blur-[2px]">
-                     <Lock className="w-1/3 h-1/3 text-white/50" />
-                   </div>
-                 )}
-              </div>
-
-              {/* Hover Label */}
-              <div className="absolute top-full mt-2 left-1/2 -translate-x-1/2 bg-black/80 backdrop-blur px-3 py-1 rounded-full border border-white/10 text-white text-xs whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50">
-                {planet.name}
-              </div>
+              {selectedPlanet.locked ? (
+                <Button disabled className="w-full h-14 text-lg bg-white/5 text-slate-500 border border-white/10">
+                  <Lock className="w-5 h-5 mr-2" /> Sector Bloqueado
+                </Button>
+              ) : (
+                <Button 
+                  className={cn(
+                    "w-full h-14 text-lg font-bold shadow-lg transition-all hover:scale-[1.02]",
+                    "bg-gradient-to-r text-white border-0",
+                    selectedPlanet.gradient
+                  )}
+                  onClick={() => handleEnterWorld(selectedPlanet.worldId!)}
+                >
+                  <Rocket className="w-5 h-5 mr-2 animate-bounce" /> 
+                  Iniciar Misión
+                </Button>
+              )}
             </motion.div>
-          </div>
-        ))}
+          </AnimatePresence>
+        </div>
+
       </div>
-
-      {/* Info Panel - Bottom Right or Centered when selected */}
-      <AnimatePresence>
-        {selectedPlanet && (
-          <motion.div 
-            initial={{ opacity: 0, x: 100 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: 100 }}
-            className="absolute top-0 right-0 h-full w-full md:w-[400px] bg-black/80 backdrop-blur-xl border-l border-white/10 p-8 z-[100] flex flex-col shadow-2xl"
-          >
-            <Button 
-              variant="ghost" 
-              size="icon" 
-              className="absolute top-4 right-4 text-white hover:bg-white/10 rounded-full"
-              onClick={() => setSelectedPlanet(null)}
-            >
-              ✕
-            </Button>
-
-            <div className="mt-12 flex flex-col items-center text-center">
-               <motion.div 
-                 key={selectedPlanet.id}
-                 initial={{ scale: 0.8, opacity: 0 }}
-                 animate={{ scale: 1, opacity: 1 }}
-                 className="w-48 h-48 mb-6 relative"
-               >
-                 <div className="absolute inset-0 bg-gradient-to-b from-cyan-500/20 to-purple-500/20 blur-3xl rounded-full" />
-                 <img src={selectedPlanet.icon} className="w-full h-full object-contain relative z-10 drop-shadow-2xl" />
-               </motion.div>
-
-               <div className="inline-block px-3 py-1 rounded-full border border-white/20 bg-white/5 text-cyan-400 text-xs font-bold tracking-widest uppercase mb-4">
-                 {selectedPlanet.type}
-               </div>
-
-               <h2 className="text-4xl font-black text-white mb-4">{selectedPlanet.name}</h2>
-               <p className="text-slate-300 leading-relaxed mb-8">
-                 {selectedPlanet.description}
-               </p>
-
-               {selectedPlanet.locked ? (
-                 <div className="w-full p-4 rounded-xl bg-white/5 border border-white/10 flex items-center gap-3 text-slate-400">
-                   <Lock className="w-5 h-5" />
-                   <div className="text-left text-sm">
-                     <span className="block font-bold text-white">Acceso Denegado</span>
-                     Nivel de autorización insuficiente.
-                   </div>
-                 </div>
-               ) : (
-                 <div className="w-full space-y-4">
-                    <div className="grid grid-cols-2 gap-3">
-                       <div className="bg-white/5 p-3 rounded-lg border border-white/5">
-                          <div className="text-xs text-slate-400 uppercase font-bold">Dificultad</div>
-                          <div className="text-white font-bold">{selectedPlanet.difficulty}</div>
-                       </div>
-                       <div className="bg-white/5 p-3 rounded-lg border border-white/5">
-                          <div className="text-xs text-slate-400 uppercase font-bold">Recompensa</div>
-                          <div className="text-yellow-400 font-bold">XP & Skins</div>
-                       </div>
-                    </div>
-
-                    <Button 
-                      size="lg" 
-                      className="w-full h-14 text-lg font-bold bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 shadow-lg shadow-cyan-500/25"
-                      onClick={() => handleEnterWorld(selectedPlanet.worldId!)}
-                    >
-                      Viajar a {selectedPlanet.name} <Rocket className="ml-2 w-5 h-5" />
-                    </Button>
-                 </div>
-               )}
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
     </div>
   );
 }
