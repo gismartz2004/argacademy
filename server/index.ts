@@ -1,4 +1,6 @@
-import express, { type Request, Response, NextFunction } from "express";
+import "dotenv/config";
+import express, { type Request, type Response, type NextFunction } from "express";
+import cors from "cors";
 import { registerRoutes } from "./routes";
 import { serveStatic } from "./static";
 import { createServer } from "http";
@@ -6,22 +8,40 @@ import { createServer } from "http";
 const app = express();
 const httpServer = createServer(app);
 
-declare module "http" {
-  interface IncomingMessage {
-    rawBody: unknown;
+// Extensión de tipo para rawBody
+declare global {
+  namespace Express {
+    interface Request {
+      rawBody?: Buffer;
+    }
   }
 }
 
+// ✅ Habilitar CORS
+// En desarrollo, permitimos cualquier origen (ajusta en producción)
+const corsOptions = {
+  origin: process.env.NODE_ENV === "production"
+    ? ["https://tu-dominio.com"] // 🔒 Restringe en producción
+    : "*", // 🛠️ Permitir todos en desarrollo (solo para local)
+  credentials: true, // Si usas cookies/sesiones
+};
+app.use(cors(corsOptions));
+
+// Parseo de JSON con rawBody
 app.use(
   express.json({
     verify: (req, _res, buf) => {
-      req.rawBody = buf;
+      (req as any).rawBody = buf;
     },
   }),
 );
 
 app.use(express.urlencoded({ extended: false }));
 
+// Serve uploads directory
+app.use("/uploads", express.static("uploads"));
+
+// Logger util
 export function log(message: string, source = "express") {
   const formattedTime = new Date().toLocaleTimeString("en-US", {
     hour: "numeric",
@@ -29,10 +49,10 @@ export function log(message: string, source = "express") {
     second: "2-digit",
     hour12: true,
   });
-
   console.log(`${formattedTime} [${source}] ${message}`);
 }
 
+// Logger de requests API
 app.use((req, res, next) => {
   const start = Date.now();
   const path = req.path;
@@ -51,7 +71,6 @@ app.use((req, res, next) => {
       if (capturedJsonResponse) {
         logLine += ` :: ${JSON.stringify(capturedJsonResponse)}`;
       }
-
       log(logLine);
     }
   });
@@ -59,20 +78,20 @@ app.use((req, res, next) => {
   next();
 });
 
+// Inicialización asíncrona
 (async () => {
   await registerRoutes(httpServer, app);
 
+  // Manejo global de errores
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
     const status = err.status || err.statusCode || 500;
     const message = err.message || "Internal Server Error";
-
     res.status(status).json({ message });
-    throw err;
+    // Opcional: no lances el error aquí si ya lo manejaste
+    // throw err; // ← esto puede reiniciar el proceso; mejor quitarlo
   });
 
-  // importantly only setup vite in development and after
-  // setting up all the other routes so the catch-all route
-  // doesn't interfere with the other routes
+  // Configuración de frontend (Vite en dev, static en prod)
   if (process.env.NODE_ENV === "production") {
     serveStatic(app);
   } else {
@@ -80,10 +99,7 @@ app.use((req, res, next) => {
     await setupVite(httpServer, app);
   }
 
-  // ALWAYS serve the app on the port specified in the environment variable PORT
-  // Other ports are firewalled. Default to 5000 if not specified.
-  // this serves both the API and the client.
-  // It is the only port that is not firewalled.
+  // ✅ Puerto: 5000 por defecto (requerido por tu entorno)
   const port = parseInt(process.env.PORT || "5000", 10);
   httpServer.listen(
     {
@@ -92,7 +108,10 @@ app.use((req, res, next) => {
       reusePort: true,
     },
     () => {
-      log(`serving on port ${port}`);
-    },
+      log(`Servidor corriendo en http://localhost:${port}`);
+      if (process.env.NODE_ENV !== "production") {
+        log(`Modo: desarrollo (Vite integrado)`);
+      }
+    }
   );
 })();
