@@ -99,7 +99,12 @@ app.use((req, res, next) => {
     await setupVite(httpServer, app);
   }
 
-  // ✅ Puerto: 5000 por defecto (requerido por tu entorno)
+  // Health check endpoint para Cloud Run
+  app.get("/health", (_req, res) => {
+    res.status(200).json({ status: "healthy", timestamp: new Date().toISOString() });
+  });
+
+  // ✅ Puerto: 5000 en dev, 8080 en producción (Cloud Run)
   const port = parseInt(process.env.PORT || "5000", 10);
   httpServer.listen(
     {
@@ -108,9 +113,11 @@ app.use((req, res, next) => {
       reusePort: true,
     },
     () => {
-      log(`Servidor corriendo en http://localhost:${port}`);
+      log(`Servidor corriendo en http://0.0.0.0:${port}`);
       if (process.env.NODE_ENV !== "production") {
         log(`Modo: desarrollo (Vite integrado)`);
+      } else {
+        log(`Modo: producción`);
       }
     }
   );

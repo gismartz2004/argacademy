@@ -1,0 +1,39 @@
+steps:
+  # Build imagen Docker
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['build', '-t', 'gcr.io/$PROJECT_ID/tech-ascent:$SHORT_SHA', '.']
+
+  # Push a Container Registry
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['push', 'gcr.io/$PROJECT_ID/tech-ascent:$SHORT_SHA']
+
+  # Deploy a Cloud Run
+  - name: 'gcr.io/cloud-builders/run'
+    args:
+      - 'deploy'
+      - 'tech-ascent'
+      - '--image'
+      - 'gcr.io/$PROJECT_ID/tech-ascent:$SHORT_SHA'
+      - '--region'
+      - 'us-central1'
+      - '--platform'
+      - 'managed'
+      - '--allow-unauthenticated'
+      - '--set-env-vars'
+      - 'NODE_ENV=production,PORT=8080'
+      - '--set-secrets'
+      - 'DATABASE_URL=DATABASE_URL:latest,SESSION_SECRET=SESSION_SECRET:latest'
+      - '--cpu'
+      - '2'
+      - '--memory'
+      - '512Mi'
+      - '--timeout'
+      - '3600'
+      - '--max-instances'
+      - '10'
+
+# Configuración del build
+images:
+  - 'gcr.io/$PROJECT_ID/tech-ascent:$SHORT_SHA'
+
+timeout: '1800s'
