@@ -49,4 +49,4 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
 
 # Run with dumb-init
 ENTRYPOINT ["dumb-init", "--"]
-CMD ["node", "--loader", "tsx", "server/index.ts"]
+CMD ["node", "dist/index.cjs"]
