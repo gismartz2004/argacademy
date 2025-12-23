@@ -30,9 +30,8 @@ COPY package*.json ./
 RUN npm ci --only=production
 
 # Copy built application from builder
+# Vite builds client to dist/public and esbuild builds server to dist/index.cjs
 COPY --from=builder /app/dist ./dist
-COPY --from=builder /app/client/dist ./client/dist
-COPY --from=builder /app/server ./server
 
 # Create uploads directory
 RUN mkdir -p /app/uploads
